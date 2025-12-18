@@ -78,17 +78,16 @@ class LumberMill(ProducerBuilding):
 
 class House(ProducerBuilding):
     def __init__(self, id_: int):
-        # houses produce 1 person per tick
         super().__init__(id_, 'house', produces={'people': 1})
 
 
 class Apartament(ProducerBuilding):
     def __init__(self, id_: int):
-        # apartaments produce more people than a single house
         super().__init__(id_, 'apartament', produces={'people': 3})
 
 
 class CoalMine(ProducerBuilding):
     def __init__(self, id_: int):
         super().__init__(id_, 'coal_mine', produces={'coal': 8})
+
 

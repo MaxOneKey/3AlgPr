@@ -16,7 +16,6 @@ class ResourceManager(IResourceManager):
         self._repo = resource_repo
         # default capacities
         self._capacity: Dict[str, int] = {}
-        # ensure repository has resources
         for r in ['wood', 'stone', 'food', 'iron', 'energy', 'gold', 'coal', 'sand', 'concrete', 'people']:
             if self._repo.get(r) is None:
                 self._repo.add(Resource(r, 0))
@@ -135,7 +134,6 @@ class ProductionService(IProductionService):
                     self._rm.add_resource(rname, amount)
 
 
-# GameService: composition used by UI
 class GameService:
     def __init__(
         self,
@@ -158,8 +156,6 @@ class GameService:
         return [b.summary() for b in self._br.all()]
 
     def build(self, kind: str) -> tuple[bool, str]:
-        # simple cost blueprints
-        # require a small number of people (workers) for each construction
         blueprints = {
             'farm': {'wood': 10, 'stone': 5, 'people': 1},
             'lumber_mill': {'wood': 5, 'stone': 5, 'people': 1},
@@ -183,4 +179,5 @@ class GameService:
         return True, f"Built {b.summary()}"
 
     def tick(self) -> None:
+
         self._prod.tick()

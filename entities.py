@@ -66,7 +66,6 @@ class StorageBuilding(Building):
         self.adds_capacity = adds_capacity
 
 
-# small concrete types for clarity
 class Farm(ProducerBuilding):
     def __init__(self, id_: int):
         super().__init__(id_, 'farm', produces={'food': 5})
@@ -92,3 +91,4 @@ class Apartament(ProducerBuilding):
 class CoalMine(ProducerBuilding):
     def __init__(self, id_: int):
         super().__init__(id_, 'coal_mine', produces={'coal': 8})
+

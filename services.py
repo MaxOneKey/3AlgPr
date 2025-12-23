@@ -8,15 +8,21 @@ from entities import (
     Resource, Building, ProducerBuilding, StorageBuilding
 )
 
+# У файлі services.py, клас ResourceManager
 class ResourceManager(IResourceManager):
     def __init__(self, resource_repo: ResourceRepository):
         self._repo = resource_repo
         self._capacity: Dict[str, int] = {}
-        # Ініціалізуємо базові ресурси
-        for r in ['wood', 'stone', 'food', 'iron', 'energy', 'coal', 'sand', 'concrete', 'people']:
+        for r in ['wood', 'stone', 'food', 'iron', 'energy', 'coal', 'sand', 'concrete', 'people', 'graduates', 'masters']:
             if self._repo.get(r) is None:
                 self._repo.add(Resource(r, 0))
-            self._capacity[r] = 100  # Базова місткість
+            
+            if r == 'graduates':
+                self._capacity[r] = 10
+            elif r == 'masters':
+                self._capacity[r] = 5
+            else:
+                self._capacity[r] = 100
 
     def add_resource(self, name: str, amount: int) -> None:
         res = self._repo.get(name)
@@ -239,3 +245,4 @@ class GameService:
 
     def tick(self) -> None:
         self._prod.tick()
+

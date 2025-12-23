@@ -237,6 +237,9 @@ class GameService:
             'concrete_factory': {'stone': 50, 'iron': 20, 'energy': 10},
             'house': {'wood': 20, 'stone': 10},
             'warehouse': {'wood': 50, 'stone': 50},
+            'school': {'wood': 40, 'stone': 20},
+            'library': {'wood': 20, 'stone': 50},
+            'university': {'iron': 30, 'concrete': 20, 'energy': 10},
         }
         
         bp = blueprints.get(kind)
@@ -257,5 +260,6 @@ class GameService:
 
     def tick(self) -> None:
         self._prod.tick()
+
 
 

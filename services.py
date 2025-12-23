@@ -218,31 +218,40 @@ class GameService:
         self._factory = factory
         self._constr = constr
         self._prod = prod
+        
+        self._building_configs = {
+            'living': {
+                'house': {'wood': 20, 'stone': 10},
+                'school': {'wood': 40, 'stone': 20},
+                'library': {'wood': 20, 'stone': 50},
+                'university': {'iron': 30, 'concrete': 20, 'energy': 10},
+            },
+            'industrial': {
+                'power_plant': {'stone': 50, 'iron': 20, 'concrete': 10},
+                'concrete_factory': {'stone': 50, 'iron': 20, 'energy': 10},
+                'warehouse': {'wood': 50, 'stone': 50},
+            },
+            'mining': {
+                'farm': {'wood': 10, 'stone': 5},
+                'lumber_mill': {'wood': 10, 'stone': 10},
+                'coal_mine': {'wood': 20, 'stone': 20},
+                'quarry': {'wood': 20},
+                'mine': {'wood': 50, 'stone': 50},
+                'sand_quarry': {'wood': 10, 'stone': 10},
+            }
+        }
 
-    def list_resources(self) -> Dict[str, int]:
-        return {r.name: r.amount for r in self._rm._repo.all()}
-
-    def list_buildings(self) -> List[Building]:
-        return self._br.all()
+    def get_building_catalog(self) -> Dict[str, Dict[str, Dict[str, int]]]:
+        """Повертає весь каталог будівель з категоріями та цінами"""
+        return self._building_configs
 
     def build(self, kind: str) -> tuple[bool, str]:
-        blueprints = {
-            'farm': {'wood': 10, 'stone': 5},
-            'lumber_mill': {'wood': 10, 'stone': 10},
-            'coal_mine': {'wood': 20, 'stone': 20},
-            'power_plant': {'stone': 50, 'iron': 20, 'concrete': 10},
-            'quarry': {'wood': 20},
-            'mine': {'wood': 50, 'stone': 50},
-            'sand_quarry': {'wood': 10, 'stone': 10},
-            'concrete_factory': {'stone': 50, 'iron': 20, 'energy': 10},
-            'house': {'wood': 20, 'stone': 10},
-            'warehouse': {'wood': 50, 'stone': 50},
-            'school': {'wood': 40, 'stone': 20},
-            'library': {'wood': 20, 'stone': 50},
-            'university': {'iron': 30, 'concrete': 20, 'energy': 10},
-        }
+        bp = None
+        for cat_bldgs in self._building_configs.values():
+            if kind in cat_bldgs:
+                bp = cat_bldgs[kind]
+                break
         
-        bp = blueprints.get(kind)
         if not bp:
             return False, f"Unknown blueprint for {kind}"
 
@@ -260,6 +269,7 @@ class GameService:
 
     def tick(self) -> None:
         self._prod.tick()
+
 
 
 

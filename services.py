@@ -61,7 +61,19 @@ class BuildingFactory(IBuildingFactory):
         return self._id_counter
 
     def create(self, kind: str) -> Building:
-        # Ланцюжки виробництва
+
+        if kind == 'school':
+            return ProducerBuilding(self._next_id(), 'school', 
+                                    produces={'graduates': 1}, 
+                                    consumes={'people': 1, 'food': 1})
+        if kind == 'library':
+            return ProducerBuilding(self._next_id(), 'library', 
+                                    produces={'graduates': 1}, 
+                                    consumes={'people': 1, 'energy': 2})
+        if kind == 'university':
+            return ProducerBuilding(self._next_id(), 'university', 
+                                    produces={'masters': 1}, 
+                                    consumes={'graduates': 1, 'energy': 5})
         if kind == 'farm':
             return ProducerBuilding(self._next_id(), 'farm', produces={'food': 10})
         
@@ -245,4 +257,5 @@ class GameService:
 
     def tick(self) -> None:
         self._prod.tick()
+
 

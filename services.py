@@ -8,7 +8,6 @@ from entities import (
     Resource, Building, ProducerBuilding, StorageBuilding
 )
 
-# У файлі services.py, клас ResourceManager
 class ResourceManager(IResourceManager):
     def __init__(self, resource_repo: ResourceRepository):
         self._repo = resource_repo
@@ -269,6 +268,12 @@ class GameService:
 
     def tick(self) -> None:
         self._prod.tick()
+    
+    def list_resources(self) -> Dict[str, int]:
+        return {r.name: r.amount for r in self._rm._repo.all()}
+
+    def list_buildings(self) -> List[Building]:
+        return self._br.all()
 
 
 

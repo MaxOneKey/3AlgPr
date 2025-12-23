@@ -31,6 +31,18 @@ class ConsoleUI(IGameUI):
         for b in blds:
             print(f"  ID:{b.id:<2} {b.summary()}")
 
+    def _show_build_menu(self) -> None:
+        """Автоматично виводить категорії та будівлі з GameService"""
+        catalog = self._gs.get_building_catalog()
+        print("\n--- CONSTRUCTION MENU ---")
+        
+        for category, buildings in catalog.items():
+            print(f"\n[{category.upper()}]")
+            for b_name, costs in buildings.items():
+                cost_str = ", ".join([f"{v} {k}" for k, v in costs.items()])
+                print(f"  > {b_name:18} | Cost: {cost_str}")
+        print("-" * 60)
+
     def _print_menu(self) -> None:
         print("-" * 60)
         print("1) Resources  2) Buildings  3) Build...")
@@ -44,6 +56,7 @@ class ConsoleUI(IGameUI):
             try:
                 choice = input("Action > ").strip()
             except (EOFError, KeyboardInterrupt):
+                print("\nExiting...")
                 return
             
             if choice == "1":
@@ -51,17 +64,17 @@ class ConsoleUI(IGameUI):
             elif choice == "2":
                 self._print_buildings()
             elif choice == "3":
-                print("Available: farm, lumber_mill, coal_mine, power_plant, quarry, mine, sand_quarry, concrete_factory, warehouse, house")
-                k = input("Type building kind: ").strip()
-                ok, msg = self._gs.build(k)
-                print(f">> {msg}")
+                self._show_build_menu()
+                k = input("Type building name to build (or 'back'): ").strip().lower()
+                if k != 'back':
+                    ok, msg = self._gs.build(k)
+                    print(f">> {msg}")
             elif choice == "4":
                 print("Processing tick...")
                 self._gs.tick()
                 print("Done.")
                 self._print_resources()
             elif choice == "5":
-                #тестуваня
                 rm = self._gs._rm
                 for r in ['wood', 'stone', 'iron', 'food', 'coal', 'energy', 'people']:
                     rm.add_resource(r, 50)

@@ -17,8 +17,8 @@ class ConsoleUI(IGameUI):
         i = 0
         for name, amount in res_list.items():
             cap = self._gs._rm.get_capacity(name)
-            marker = "!" if amount == 0 and name in ['food', 'energy'] else " "
-            print(f" {marker} {name:10} : {amount:5} / {cap:<5}", end="")
+            marker = "!" if amount == 0 and name in ['food', 'energy', 'water'] else " "
+            print(f" {marker} {name:15} : {amount:5} / {cap:<5}", end="")
             i += 1
             if i % 2 == 0: print() 
         print()
@@ -47,6 +47,7 @@ class ConsoleUI(IGameUI):
         print("-" * 60)
         print("1) Resources  2) Buildings  3) Build...")
         print("4) NEXT TICK  5) Cheat (+Res) 6) UPGRADE Building")
+        print("7) BUILD SHIP (Port required)") 
         print("0) Exit")
 
     def main_loop(self) -> None:
@@ -76,8 +77,8 @@ class ConsoleUI(IGameUI):
                 self._print_resources()
             elif choice == "5":
                 rm = self._gs._rm
-                for r in ['wood', 'stone', 'iron', 'food', 'coal', 'energy', 'people']:
-                    rm.add_resource(r, 50)
+                for r in ['wood', 'stone', 'iron', 'food', 'coal', 'energy', 'people', 'planks', 'water', 'steel']:
+                    rm.add_resource(r, 100)
                 print(">> Resources added.")
             elif choice == "6":
                 bid = input("Enter Building ID to upgrade: ").strip()
@@ -86,6 +87,9 @@ class ConsoleUI(IGameUI):
                     print(f">> {msg}")
                 else:
                     print("Invalid ID")
+            elif choice == "7":
+                ok, msg = self._gs.build_ship()
+                print(f">> {msg}")
             elif choice == "0":
                 self._running = False
                 print("Goodbye.")

@@ -5,21 +5,30 @@ from interfaces import (
 )
 from repositories import BuildingRepository, ResourceRepository
 from entities import (
-    Resource, Building, ProducerBuilding, StorageBuilding
+    Resource, Building, ProducerBuilding, StorageBuilding, WaterTower
 )
 
 class ResourceManager(IResourceManager):
     def __init__(self, resource_repo: ResourceRepository):
         self._repo = resource_repo
         self._capacity: Dict[str, int] = {}
-        for r in ['wood', 'stone', 'food', 'iron', 'energy', 'coal', 'sand', 'concrete', 'people', 'graduates', 'masters']:
+
+        all_resources = [
+            'wood', 'stone', 'food', 'iron', 'energy', 'coal', 'sand', 'concrete', 'people', 
+            'graduates', 'masters', 'planks', 'water', 'fish', 'steel', 'research_points', 'ship'
+        ]
+        
+        for r in all_resources:
             if self._repo.get(r) is None:
                 self._repo.add(Resource(r, 0))
             
+
             if r == 'graduates':
                 self._capacity[r] = 10
             elif r == 'masters':
                 self._capacity[r] = 5
+            elif r == 'ship':
+                self._capacity[r] = 5 
             else:
                 self._capacity[r] = 100
 
@@ -61,58 +70,65 @@ class BuildingFactory(IBuildingFactory):
 
     def create(self, kind: str) -> Building:
 
+        if kind == 'park':
+
+            return Building(self._next_id(), 'park')
+            
+        if kind == 'carpenter':
+
+            return ProducerBuilding(self._next_id(), 'carpenter', 
+                                    produces={'planks': 1}, 
+                                    consumes={'wood': 1})
+                                    
+        if kind == 'water_tower':
+
+            return WaterTower(self._next_id(), 'water_tower')
+            
+        if kind == 'port':
+
+            return ProducerBuilding(self._next_id(), 'port', 
+                                    produces={'fish': 5}, 
+                                    consumes={'energy': 2})
+                                    
+        if kind == 'metallurgy_plant':
+
+            return ProducerBuilding(self._next_id(), 'metallurgy_plant', 
+                                    produces={'steel': 1}, 
+                                    consumes={'iron': 1, 'coal': 1, 'energy': 5})
+                                    
+        if kind == 'science_lab':
+
+            return ProducerBuilding(self._next_id(), 'science_lab', 
+                                    produces={'research_points': 1}, 
+                                    consumes={'planks': 1, 'energy': 3})
+
+        # --- СТАРІ БУДІВЛІ ---
         if kind == 'school':
-            return ProducerBuilding(self._next_id(), 'school', 
-                                    produces={'graduates': 1}, 
-                                    consumes={'people': 1, 'food': 1})
+            return ProducerBuilding(self._next_id(), 'school', produces={'graduates': 1}, consumes={'people': 1, 'food': 1})
         if kind == 'library':
-            return ProducerBuilding(self._next_id(), 'library', 
-                                    produces={'graduates': 1}, 
-                                    consumes={'people': 1, 'energy': 2})
+            return ProducerBuilding(self._next_id(), 'library', produces={'graduates': 1}, consumes={'people': 1, 'energy': 2})
         if kind == 'university':
-            return ProducerBuilding(self._next_id(), 'university', 
-                                    produces={'masters': 1}, 
-                                    consumes={'graduates': 1, 'energy': 5})
+            return ProducerBuilding(self._next_id(), 'university', produces={'masters': 1}, consumes={'graduates': 1, 'energy': 5})
         if kind == 'farm':
             return ProducerBuilding(self._next_id(), 'farm', produces={'food': 10})
-        
         if kind == 'lumber_mill':
             return ProducerBuilding(self._next_id(), 'lumber_mill', produces={'wood': 5})
-        
         if kind == 'coal_mine':
-            # Вугілля потрібне для енергії
             return ProducerBuilding(self._next_id(), 'coal_mine', produces={'coal': 5}, consumes={'wood': 1})
-            
         if kind == 'power_plant':
-            # Енергія потрібна для заводів. Споживає вугілля.
             return ProducerBuilding(self._next_id(), 'power_plant', produces={'energy': 20}, consumes={'coal': 3})
-            
         if kind == 'quarry':
             return ProducerBuilding(self._next_id(), 'quarry', produces={'stone': 5}, consumes={'energy': 1})
-            
         if kind == 'mine':
             return ProducerBuilding(self._next_id(), 'mine', produces={'iron': 3}, consumes={'energy': 2})
-            
         if kind == 'sand_quarry':
             return ProducerBuilding(self._next_id(), 'sand_quarry', produces={'sand': 5}, consumes={'energy': 1})
-            
         if kind == 'concrete_factory':
-            return ProducerBuilding(
-                self._next_id(), 
-                'concrete_factory', 
-                produces={'concrete': 4}, 
-                consumes={'stone': 2, 'sand': 2, 'energy': 5}
-            )
-            
+            return ProducerBuilding(self._next_id(), 'concrete_factory', produces={'concrete': 4}, consumes={'stone': 2, 'sand': 2, 'energy': 5})
         if kind == 'house':
             return ProducerBuilding(self._next_id(), 'house', produces={'people': 1}, consumes={'food': 2})
-
         if kind == 'warehouse':
-            return StorageBuilding(
-                self._next_id(),
-                'warehouse',
-                adds_capacity={'wood': 200, 'stone': 200, 'food': 200, 'iron': 100, 'coal': 100}
-            )
+            return StorageBuilding(self._next_id(), 'warehouse', adds_capacity={'wood': 200, 'stone': 200, 'food': 200, 'iron': 100, 'coal': 100, 'planks': 100, 'steel': 50})
 
         raise ValueError(f"Unknown building kind: {kind}")
 
@@ -137,7 +153,8 @@ class ConstructionService(IConstructionService):
         b = build_fn()
         self._buildings.add(b)
         
-        if isinstance(b, StorageBuilding):
+
+        if hasattr(b, 'adds_capacity'):
             for rname, inc in b.adds_capacity.items():
                 self._rm.increase_capacity(rname, inc)
         return b
@@ -160,15 +177,18 @@ class ConstructionService(IConstructionService):
         for name, cost in blueprint.items():
             self._rm.consume_resource(name, cost)
             
-        if isinstance(b, StorageBuilding):
+
+        old_caps = {}
+        if hasattr(b, 'adds_capacity'):
             old_caps = b.adds_capacity
-            b.upgrade()
+
+        b.upgrade()
+
+        if hasattr(b, 'adds_capacity'):
             new_caps = b.adds_capacity
             for rname, val in new_caps.items():
                 diff = val - old_caps.get(rname, 0)
                 self._rm.increase_capacity(rname, diff)
-        else:
-            b.upgrade()
             
         return True, f"Upgraded {b.kind} to Level {b.level}"
 
@@ -179,17 +199,25 @@ class ProductionService(IProductionService):
         self._rm = resource_manager
 
     def tick(self) -> None:
-        """
-        Головний цикл тіку.
-        1. Споживання населенням їжі.
-        2. Виробництво будівель (зі споживанням вхідних ресурсів).
-        """
         people = self._rm.get_amount('people')
+        
+
         if people > 0:
             food_needed = max(1, int(people * 0.2)) 
             if not self._rm.consume_resource('food', food_needed):
                 self._rm.consume_resource('people', max(1, int(people * 0.1)))
-                print(f"  [!] STARVATION: Not enough food. Population decreased.")
+                print(f"  [!] STARVATION: Not enough food.")
+
+
+        all_buidings_count = len(self._buildings.all())
+        water_needed = all_buidings_count
+        if water_needed > 0:
+            if not self._rm.consume_resource('water', water_needed):
+
+                print(f"  [!] DROUGHT: Not enough water for buildings (-{water_needed}). Systems failing.")
+
+                if people > 0:
+                     self._rm.consume_resource('people', 1)
 
         for b in self._buildings.all():
             if isinstance(b, ProducerBuilding):
@@ -221,14 +249,22 @@ class GameService:
         self._building_configs = {
             'living': {
                 'house': {'wood': 20, 'stone': 10},
+                'park': {'wood': 10},
                 'school': {'wood': 40, 'stone': 20},
                 'library': {'wood': 20, 'stone': 50},
                 'university': {'iron': 30, 'concrete': 20, 'energy': 10},
             },
             'industrial': {
+                'carpenter': {'wood': 20, 'stone': 10},
+                'metallurgy_plant': {'stone': 50, 'concrete': 20, 'energy': 20},
+                'science_lab': {'stone': 30, 'iron': 10, 'planks': 20},
                 'power_plant': {'stone': 50, 'iron': 20, 'concrete': 10},
                 'concrete_factory': {'stone': 50, 'iron': 20, 'energy': 10},
                 'warehouse': {'wood': 50, 'stone': 50},
+                'port': {'wood': 100, 'stone': 50, 'planks': 50}, # Порт дорогий
+            },
+            'infrastructure': {
+                'water_tower': {'stone': 20, 'iron': 10, 'planks': 10},
             },
             'mining': {
                 'farm': {'wood': 10, 'stone': 5},
@@ -240,8 +276,13 @@ class GameService:
             }
         }
 
+    def list_resources(self) -> Dict[str, int]:
+        return {r.name: r.amount for r in self._rm._repo.all()}
+
+    def list_buildings(self) -> List[Building]:
+        return self._br.all()
+
     def get_building_catalog(self) -> Dict[str, Dict[str, Dict[str, int]]]:
-        """Повертає весь каталог будівель з категоріями та цінами"""
         return self._building_configs
 
     def build(self, kind: str) -> tuple[bool, str]:
@@ -263,18 +304,25 @@ class GameService:
             
         return True, f"Built {b.summary()}"
 
+    def build_ship(self) -> tuple[bool, str]:
+        ports = [b for b in self._br.all() if b.kind == 'port']
+        if not ports:
+            return False, "You need a PORT to build ships!"
+
+        cost = {'planks': 50, 'steel': 10, 'energy': 20}
+        
+        for r, amount in cost.items():
+            if not self._rm.has_resource(r, amount):
+                return False, f"Not enough resources for Ship: {cost}"
+        
+        for r, amount in cost.items():
+            self._rm.consume_resource(r, amount)
+
+        self._rm.add_resource('ship', 1)
+        return True, "Ship launched successfully! (+1 Fleet)"
+
     def upgrade(self, building_id: int) -> tuple[bool, str]:
         return self._constr.upgrade_building(building_id)
 
     def tick(self) -> None:
         self._prod.tick()
-    
-    def list_resources(self) -> Dict[str, int]:
-        return {r.name: r.amount for r in self._rm._repo.all()}
-
-    def list_buildings(self) -> List[Building]:
-        return self._br.all()
-
-
-
-

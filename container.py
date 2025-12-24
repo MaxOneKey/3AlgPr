@@ -4,7 +4,7 @@ from typing import Dict
 from repositories import BuildingRepository, ResourceRepository
 from services import (
     ResourceManager, BuildingFactory, ConstructionService, 
-    ProductionService, GameService, ResearchService, TradingService
+    ProductionService, GameService, ResearchService, TradingService, RaidService
 )
 
 class Container:
@@ -30,9 +30,8 @@ def build_container() -> Container:
     constr = ConstructionService(rm, bld_repo)
     prod = ProductionService(bld_repo, rm)
     research = ResearchService(rm)
-    
-
     trading = TradingService(rm)
+    raid = RaidService(rm)  # <--- Додано
 
     c.register_singleton('resource_manager', rm)
     c.register_singleton('building_factory', factory)
@@ -40,11 +39,13 @@ def build_container() -> Container:
     c.register_singleton('production_service', prod)
     c.register_singleton('research_service', research)
     c.register_singleton('trading_service', trading)
+    c.register_singleton('raid_service', raid) # <--- Додано
 
-   
-    gs = GameService(rm, bld_repo, factory, constr, prod, research, trading)
+    # Передаємо raid у GameService
+    gs = GameService(rm, bld_repo, factory, constr, prod, research, trading, raid)
     c.register_singleton('game_service', gs)
 
+    # Стартові ресурси
     rm.add_resource('wood', 20)
     rm.add_resource('stone', 20)
     rm.add_resource('food', 10)

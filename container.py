@@ -4,7 +4,7 @@ from typing import Dict
 from repositories import BuildingRepository, ResourceRepository
 from services import (
     ResourceManager, BuildingFactory, ConstructionService, 
-    ProductionService, GameService, ResearchService
+    ProductionService, GameService, ResearchService, TradingService
 )
 
 class Container:
@@ -16,7 +16,6 @@ class Container:
 
     def resolve(self, cls_or_name: str):
         return self._singletons.get(cls_or_name)
-
 
 def build_container() -> Container:
     c = Container()
@@ -31,14 +30,19 @@ def build_container() -> Container:
     constr = ConstructionService(rm, bld_repo)
     prod = ProductionService(bld_repo, rm)
     research = ResearchService(rm)
+    
+
+    trading = TradingService(rm)
 
     c.register_singleton('resource_manager', rm)
     c.register_singleton('building_factory', factory)
     c.register_singleton('construction_service', constr)
     c.register_singleton('production_service', prod)
     c.register_singleton('research_service', research)
+    c.register_singleton('trading_service', trading)
 
-    gs = GameService(rm, bld_repo, factory, constr, prod, research)
+   
+    gs = GameService(rm, bld_repo, factory, constr, prod, research, trading)
     c.register_singleton('game_service', gs)
 
     rm.add_resource('wood', 20)
@@ -46,5 +50,6 @@ def build_container() -> Container:
     rm.add_resource('food', 10)
     rm.add_resource('iron', 5)
     rm.add_resource('research_points', 5)
+    rm.add_resource('gold', 50) 
 
     return c

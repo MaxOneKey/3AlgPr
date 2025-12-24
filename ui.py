@@ -8,7 +8,7 @@ class ConsoleUI(IGameUI):
 
     def _print_header(self) -> None:
         print("\n" + "=" * 60)
-        print("ADVANCED CITY BUILDER — Trade & Logistics Update")
+        print("ADVANCED CITY BUILDER — Trade, Logistics & Raids")
         print("=" * 60)
 
     def _print_resources(self) -> None:
@@ -18,7 +18,6 @@ class ConsoleUI(IGameUI):
         for name, amount in res_list.items():
             cap = self._gs._rm.get_capacity(name)
             marker = "!" if amount == 0 and name in ['food', 'energy', 'water'] else " "
-            # Виділяємо золото
             if name == 'gold':
                 print(f" [$] {name:15} : {amount:5} / {cap:<5}", end="")
             else:
@@ -63,7 +62,6 @@ class ConsoleUI(IGameUI):
             print(f"      Unlocks: {unlocks}")
         print("-" * 60)
 
-    # --- НОВЕ МЕНЮ ТОРГІВЛІ ---
     def _show_trade_menu(self) -> None:
         cities = self._gs.get_trading_cities()
         if not cities:
@@ -98,7 +96,6 @@ class ConsoleUI(IGameUI):
             print("-" * 60)
             
             for i, off in enumerate(offers):
-                # Форматування
                 if off['type'] == 'BUY_FROM_CITY':
                     action = "BUY (Import)"
                     price_str = f"-{off['price_gold']*off['amount']} Gold"
@@ -123,7 +120,8 @@ class ConsoleUI(IGameUI):
         print("-" * 60)
         print("1) Resources  2) Buildings  3) Build...")
         print("4) NEXT TICK  5) Cheat      6) UPGRADE Building")
-        print("7) BUILD SHIP 8) RESEARCH   9) TRADE") # Додано пункт 9
+        print("7) BUILD SHIP 8) RESEARCH   9) TRADE")
+        print("10) RAID (Risk your fleet!)") 
         print("0) Exit")
 
     def main_loop(self) -> None:
@@ -151,7 +149,7 @@ class ConsoleUI(IGameUI):
                 self._print_resources()
             elif choice == "5":
                 rm = self._gs._rm
-                for r in ['wood', 'stone', 'iron', 'food', 'coal', 'energy', 'people', 'planks', 'water', 'steel', 'research_points', 'gold']:
+                for r in ['wood', 'stone', 'food', 'iron', 'energy', 'coal', 'sand', 'concrete', 'people', 'graduates', 'masters', 'planks', 'water', 'fish', 'steel', 'research_points', 'ship','gold']:
                     rm.add_resource(r, 100)
                 print(">> Resources added.")
             elif choice == "6":
@@ -168,8 +166,11 @@ class ConsoleUI(IGameUI):
                 if t != 'back':
                     ok, msg = self._gs.research_tech(t)
                     print(f">> {msg}")
-            elif choice == "9": # ТОРГІВЛЯ
+            elif choice == "9":
                 self._show_trade_menu()
+            elif choice == "10": 
+                ok, msg = self._gs.raid()
+                print(f">> {msg}")
             elif choice == "0":
                 self._running = False
             else:

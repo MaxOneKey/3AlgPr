@@ -89,3 +89,18 @@ class StorageBuilding(Building):
     def adds_capacity(self) -> Dict[str, int]:
         multiplier = self._level
         return {k: v * multiplier for k, v in self._base_capacity.items()}
+
+
+class WaterTower(ProducerBuilding):
+    def __init__(self, id_: int, kind: str):
+        super().__init__(id_, kind, produces={'water': 10}, consumes={'energy': 1})
+        self._base_capacity = {'water': 300}
+
+    @property
+    def adds_capacity(self) -> Dict[str, int]:
+        multiplier = self._level
+        return {k: v * multiplier for k, v in self._base_capacity.items()}
+
+    def summary(self) -> str:
+        base = super().summary()
+        return f"{base} [Cap: +300 Water]"

@@ -1,5 +1,6 @@
 from __future__ import annotations
-from typing import Dict, Optional, Callable, List
+from typing import Dict, Optional, Callable, List, Set
+import random
 from interfaces import (
     IResourceManager, IProductionService, IConstructionService, IBuildingFactory
 )
@@ -12,23 +13,24 @@ class ResourceManager(IResourceManager):
     def __init__(self, resource_repo: ResourceRepository):
         self._repo = resource_repo
         self._capacity: Dict[str, int] = {}
-
         all_resources = [
             'wood', 'stone', 'food', 'iron', 'energy', 'coal', 'sand', 'concrete', 'people', 
-            'graduates', 'masters', 'planks', 'water', 'fish', 'steel', 'research_points', 'ship'
+            'graduates', 'masters', 'planks', 'water', 'fish', 'steel', 'research_points', 'ship',
+            'gold'
         ]
         
         for r in all_resources:
             if self._repo.get(r) is None:
                 self._repo.add(Resource(r, 0))
             
-
             if r == 'graduates':
                 self._capacity[r] = 10
             elif r == 'masters':
                 self._capacity[r] = 5
             elif r == 'ship':
-                self._capacity[r] = 5 
+                self._capacity[r] = 5
+            elif r == 'gold':
+                self._capacity[r] = 1000
             else:
                 self._capacity[r] = 100
 
@@ -69,44 +71,26 @@ class BuildingFactory(IBuildingFactory):
         return self._id_counter
 
     def create(self, kind: str) -> Building:
+        if kind == 'logistics_center':
+            return Building(self._next_id(), 'logistics_center')
 
         if kind == 'park':
-
             return Building(self._next_id(), 'park')
-            
         if kind == 'carpenter':
-
-            return ProducerBuilding(self._next_id(), 'carpenter', 
-                                    produces={'planks': 1}, 
-                                    consumes={'wood': 1})
-                                    
+            return ProducerBuilding(self._next_id(), 'carpenter', produces={'planks': 1}, consumes={'wood': 1})
         if kind == 'water_tower':
-
             return WaterTower(self._next_id(), 'water_tower')
-            
         if kind == 'port':
-
-            return ProducerBuilding(self._next_id(), 'port', 
-                                    produces={'fish': 5}, 
-                                    consumes={'energy': 2})
-                                    
+            return ProducerBuilding(self._next_id(), 'port', produces={'fish': 5}, consumes={'energy': 2})
         if kind == 'metallurgy_plant':
-
-            return ProducerBuilding(self._next_id(), 'metallurgy_plant', 
-                                    produces={'steel': 1}, 
-                                    consumes={'iron': 1, 'coal': 1, 'energy': 5})
-                                    
+            return ProducerBuilding(self._next_id(), 'metallurgy_plant', produces={'steel': 1}, consumes={'iron': 1, 'coal': 1, 'energy': 5})
         if kind == 'science_lab':
+            return ProducerBuilding(self._next_id(), 'science_lab', produces={'research_points': 1}, consumes={'planks': 1, 'energy': 3})
+        if kind == 'library':
+            return ProducerBuilding(self._next_id(), 'library', produces={'graduates': 1, 'research_points': 1}, consumes={'people': 1, 'energy': 2})
 
-            return ProducerBuilding(self._next_id(), 'science_lab', 
-                                    produces={'research_points': 1}, 
-                                    consumes={'planks': 1, 'energy': 3})
-
-        # --- СТАРІ БУДІВЛІ ---
         if kind == 'school':
             return ProducerBuilding(self._next_id(), 'school', produces={'graduates': 1}, consumes={'people': 1, 'food': 1})
-        if kind == 'library':
-            return ProducerBuilding(self._next_id(), 'library', produces={'graduates': 1}, consumes={'people': 1, 'energy': 2})
         if kind == 'university':
             return ProducerBuilding(self._next_id(), 'university', produces={'masters': 1}, consumes={'graduates': 1, 'energy': 5})
         if kind == 'farm':
@@ -153,7 +137,6 @@ class ConstructionService(IConstructionService):
         b = build_fn()
         self._buildings.add(b)
         
-
         if hasattr(b, 'adds_capacity'):
             for rname, inc in b.adds_capacity.items():
                 self._rm.increase_capacity(rname, inc)
@@ -177,7 +160,6 @@ class ConstructionService(IConstructionService):
         for name, cost in blueprint.items():
             self._rm.consume_resource(name, cost)
             
-
         old_caps = {}
         if hasattr(b, 'adds_capacity'):
             old_caps = b.adds_capacity
@@ -201,21 +183,17 @@ class ProductionService(IProductionService):
     def tick(self) -> None:
         people = self._rm.get_amount('people')
         
-
         if people > 0:
             food_needed = max(1, int(people * 0.2)) 
             if not self._rm.consume_resource('food', food_needed):
                 self._rm.consume_resource('people', max(1, int(people * 0.1)))
                 print(f"  [!] STARVATION: Not enough food.")
 
-
         all_buidings_count = len(self._buildings.all())
         water_needed = all_buidings_count
         if water_needed > 0:
             if not self._rm.consume_resource('water', water_needed):
-
-                print(f"  [!] DROUGHT: Not enough water for buildings (-{water_needed}). Systems failing.")
-
+                print(f"  [!] DROUGHT: Not enough water (-{water_needed}).")
                 if people > 0:
                      self._rm.consume_resource('people', 1)
 
@@ -225,7 +203,6 @@ class ProductionService(IProductionService):
 
     def _process_producer(self, b: ProducerBuilding) -> None:
         can_produce = True
-        
         for rname, amount in b.consumes.items():
             if not self._rm.has_resource(rname, amount):
                 can_produce = False
@@ -238,13 +215,176 @@ class ProductionService(IProductionService):
                 self._rm.add_resource(rname, amount)
 
 
+class ResearchService:
+    def __init__(self, resource_manager: IResourceManager):
+        self._rm = resource_manager
+        self._unlocked_techs: Set[str] = set()
+        
+        self._tech_tree = {
+            'basic_logistics': {
+                'cost': 10, 
+                'unlocks_buildings': ['warehouse', 'carpenter'],
+                'desc': 'Better storage and wood processing'
+            },
+            'fluid_mechanics': {
+                'cost': 20,
+                'unlocks_buildings': ['water_tower', 'port'],
+                'desc': 'Pumps and towers for water management'
+            },
+            'metallurgy': {
+                'cost': 50,
+                'unlocks_buildings': ['coal_mine', 'mine', 'metallurgy_plant'],
+                'desc': 'Mining and steel production'
+            },
+            'construction_ii': {
+                'cost': 40,
+                'unlocks_buildings': ['concrete_factory', 'sand_quarry'],
+                'desc': 'Advanced materials (Concrete)'
+            },
+            'advanced_education': {
+                'cost': 100,
+                'unlocks_buildings': ['university', 'science_lab'],
+                'desc': 'Higher learning and faster research'
+            },
+            'power_grid': {
+                'cost': 80,
+                'unlocks_buildings': ['power_plant'],
+                'desc': 'Massive energy production'
+            },
+            'trade_logistics': {
+                'cost': 60,
+                'unlocks_buildings': ['logistics_center'],
+                'desc': 'Unlock trading with other cities'
+            }
+        }
+        
+        self._base_buildings = {
+            'house', 'park', 'farm', 'lumber_mill', 'quarry', 'school', 'library'
+        }
+
+    def get_available_techs(self) -> Dict[str, dict]:
+        return {k: v for k, v in self._tech_tree.items() if k not in self._unlocked_techs}
+
+    def is_building_unlocked(self, kind: str) -> bool:
+        if kind in self._base_buildings:
+            return True
+        for tech in self._unlocked_techs:
+            if kind in self._tech_tree[tech]['unlocks_buildings']:
+                return True
+        return False
+
+    def research(self, tech_name: str) -> tuple[bool, str]:
+        if tech_name in self._unlocked_techs:
+            return False, "Already researched."
+        
+        tech = self._tech_tree.get(tech_name)
+        if not tech:
+            return False, "Unknown technology."
+        
+        cost = tech['cost']
+        if not self._rm.has_resource('research_points', cost):
+            return False, f"Need {cost} Research Points."
+        
+        self._rm.consume_resource('research_points', cost)
+        self._unlocked_techs.add(tech_name)
+        return True, f"Researched '{tech_name}'! Unlocked: {', '.join(tech['unlocks_buildings'])}"
+
+
+class TradingService:
+    def __init__(self, resource_manager: IResourceManager):
+        self._rm = resource_manager
+        
+        self._base_prices = {
+            'wood': 2, 'stone': 3, 'food': 2, 'coal': 4, 
+            'iron': 5, 'planks': 5, 'fish': 3, 'steel': 15,
+            'concrete': 10, 'water': 1
+        }
+        
+        self._available_cities = ["Kyiv", "Lviv", "Odesa", "Kharkiv", "Dnipro", "Poltava", "Vinnytsia"]
+        self._current_offers = {}
+        self._active_cities = []
+        
+        self._regenerate_market()
+
+    def _regenerate_market(self):
+        self._active_cities = random.sample(self._available_cities, 3)
+        self._current_offers = {}
+        
+        for city in self._active_cities:
+            self._current_offers[city] = self._generate_city_offers()
+
+    def _generate_city_offers(self) -> List[dict]:
+        offers = []
+        resources = list(self._base_prices.keys())
+        
+        buy_res = random.sample(resources, 4)
+        for r in buy_res:
+            base = self._base_prices[r]
+            price = max(1, int(base * random.uniform(1.2, 1.6)))
+            offers.append({
+                'type': 'BUY_FROM_CITY',
+                'resource': r,
+                'price_gold': price,
+                'amount': 10
+            })
+
+        sell_res = random.sample(resources, 4)
+        for r in sell_res:
+            base = self._base_prices[r]
+            price = max(1, int(base * random.uniform(0.7, 1.0)))
+            offers.append({
+                'type': 'SELL_TO_CITY',
+                'resource': r,
+                'price_gold': price,
+                'amount': 10
+            })
+            
+        return offers
+
+    def get_active_cities(self) -> List[str]:
+        return self._active_cities
+
+    def get_offers(self, city_name: str) -> List[dict]:
+        return self._current_offers.get(city_name, [])
+
+    def execute_trade(self, city_name: str, offer_index: int) -> tuple[bool, str]:
+        offers = self.get_offers(city_name)
+        if not offers or offer_index < 0 or offer_index >= len(offers):
+            return False, "Invalid offer."
+
+        offer = offers[offer_index]
+        res = offer['resource']
+        gold_price = offer['price_gold'] * offer['amount']
+        amount = offer['amount']
+
+        if offer['type'] == 'BUY_FROM_CITY':
+            if not self._rm.has_resource('gold', gold_price):
+                return False, f"Not enough Gold! Need {gold_price}."
+            
+            self._rm.consume_resource('gold', gold_price)
+            self._rm.add_resource(res, amount)
+            return True, f"Bought {amount} {res} for {gold_price} Gold."
+
+        elif offer['type'] == 'SELL_TO_CITY':
+            if not self._rm.has_resource(res, amount):
+                return False, f"Not enough {res}! Need {amount}."
+            
+            self._rm.consume_resource(res, amount)
+            self._rm.add_resource('gold', gold_price)
+            return True, f"Sold {amount} {res} for {gold_price} Gold."
+            
+        return False, "Unknown trade type."
+
+
 class GameService:
-    def __init__(self, rm, br, factory, constr, prod):
+    def __init__(self, rm, br, factory, constr, prod, research, trading):
         self._rm = rm
         self._br = br
         self._factory = factory
         self._constr = constr
         self._prod = prod
+        self._research = research
+        self._trading = trading
         
         self._building_configs = {
             'living': {
@@ -261,7 +401,8 @@ class GameService:
                 'power_plant': {'stone': 50, 'iron': 20, 'concrete': 10},
                 'concrete_factory': {'stone': 50, 'iron': 20, 'energy': 10},
                 'warehouse': {'wood': 50, 'stone': 50},
-                'port': {'wood': 100, 'stone': 50, 'planks': 50}, # Порт дорогий
+                'port': {'wood': 100, 'stone': 50, 'planks': 50},
+                'logistics_center': {'wood': 100, 'stone': 100, 'planks': 50, 'concrete': 20}
             },
             'infrastructure': {
                 'water_tower': {'stone': 20, 'iron': 10, 'planks': 10},
@@ -285,7 +426,16 @@ class GameService:
     def get_building_catalog(self) -> Dict[str, Dict[str, Dict[str, int]]]:
         return self._building_configs
 
+    def list_research(self) -> Dict[str, dict]:
+        return self._research.get_available_techs()
+
+    def research_tech(self, tech_name: str) -> tuple[bool, str]:
+        return self._research.research(tech_name)
+
     def build(self, kind: str) -> tuple[bool, str]:
+        if not self._research.is_building_unlocked(kind):
+            return False, "Technology locked! Research it first."
+
         bp = None
         for cat_bldgs in self._building_configs.values():
             if kind in cat_bldgs:
@@ -308,7 +458,7 @@ class GameService:
         ports = [b for b in self._br.all() if b.kind == 'port']
         if not ports:
             return False, "You need a PORT to build ships!"
-
+        
         cost = {'planks': 50, 'steel': 10, 'energy': 20}
         
         for r, amount in cost.items():
@@ -326,3 +476,18 @@ class GameService:
 
     def tick(self) -> None:
         self._prod.tick()
+
+    def get_trading_cities(self) -> List[str]:
+        centers = [b for b in self._br.all() if b.kind == 'logistics_center']
+        if not centers:
+            return []
+        return self._trading.get_active_cities()
+
+    def get_city_offers(self, city: str) -> List[dict]:
+        return self._trading.get_offers(city)
+
+    def trade(self, city: str, offer_idx: int) -> tuple[bool, str]:
+        centers = [b for b in self._br.all() if b.kind == 'logistics_center']
+        if not centers:
+            return False, "Build Logistics Center first!"
+        return self._trading.execute_trade(city, offer_idx)

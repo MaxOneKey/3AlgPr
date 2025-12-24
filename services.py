@@ -430,36 +430,35 @@ class GameService:
         self._raid = raid
         
         self._building_configs = {
-            'living': {
-                'house': {'wood': 20, 'stone': 10},
-                'park': {'wood': 10},
-                'school': {'wood': 40, 'stone': 20},
-                'library': {'wood': 20, 'stone': 50},
-                'university': {'iron': 30, 'concrete': 20, 'energy': 10},
-            },
-            'industrial': {
-                'carpenter': {'wood': 20, 'stone': 10},
-                'metallurgy_plant': {'stone': 50, 'concrete': 20, 'energy': 20},
-                'science_lab': {'stone': 30, 'iron': 10, 'planks': 20},
-                'power_plant': {'stone': 50, 'iron': 20, 'concrete': 10},
-                'concrete_factory': {'stone': 50, 'iron': 20, 'energy': 10},
-                'warehouse': {'wood': 50, 'stone': 50},
-                'port': {'wood': 100, 'stone': 50, 'planks': 50},
-                'logistics_center': {'wood': 100, 'stone': 100, 'planks': 50, 'concrete': 20}
-            },
-            'infrastructure': {
-                'water_tower': {'stone': 20, 'iron': 10, 'planks': 10},
-            },
-            'mining': {
-                'farm': {'wood': 10, 'stone': 5},
-                'lumber_mill': {'wood': 10, 'stone': 10},
-                'coal_mine': {'wood': 20, 'stone': 20},
-                'quarry': {'wood': 20},
-                'mine': {'wood': 50, 'stone': 50},
-                'sand_quarry': {'wood': 10, 'stone': 10},
-            }
+        'living': {
+            'house': {'wood': 30, 'stone': 15}, 
+            'park': {'wood': 20, 'people': 1},
+            'school': {'wood': 50, 'stone': 30, 'people': 2},
+            'library': {'wood': 30, 'stone': 60, 'people': 2},
+            'university': {'iron': 100, 'concrete': 80, 'energy': 50, 'people': 10},
+        },
+        'industrial': {
+            'carpenter': {'wood': 40, 'stone': 20, 'people': 3},
+            'metallurgy_plant': {'stone': 150, 'concrete': 50, 'energy': 40, 'people': 8},
+            'science_lab': {'stone': 100, 'iron': 50, 'planks': 80, 'people': 6},
+            'power_plant': {'stone': 120, 'iron': 50, 'concrete': 30, 'people': 5},
+            'concrete_factory': {'stone': 100, 'iron': 30, 'energy': 20, 'people': 4},
+            'warehouse': {'wood': 80, 'stone': 80, 'planks': 40, 'people': 2},
+            'port': {'wood': 250, 'stone': 150, 'planks': 150, 'people': 10},
+            'logistics_center': {'wood': 200, 'stone': 200, 'planks': 100, 'concrete': 50, 'people': 5}
+        },
+        'infrastructure': {
+            'water_tower': {'stone': 40, 'iron': 15, 'planks': 20, 'people': 3},
+        },
+        'mining': {
+            'farm': {'wood': 20, 'stone': 10},
+            'lumber_mill': {'wood': 25, 'stone': 10, 'people': 2},
+            'coal_mine': {'wood': 40, 'stone': 40, 'people': 4},
+            'quarry': {'wood': 30, 'people': 2},
+            'mine': {'wood': 80, 'stone': 100, 'planks': 40, 'people': 5},
+            'sand_quarry': {'wood': 30, 'stone': 20, 'people': 2},
         }
-
+    }
     def list_resources(self) -> Dict[str, int]:
         return {r.name: r.amount for r in self._rm._repo.all()}
 
@@ -537,3 +536,4 @@ class GameService:
 
     def raid(self) -> tuple[bool, str]:
         return self._raid.execute_raid()
+

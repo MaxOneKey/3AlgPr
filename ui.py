@@ -32,22 +32,43 @@ class ConsoleUI(IGameUI):
             print(f"  ID:{b.id:<2} {b.summary()}")
 
     def _show_build_menu(self) -> None:
-        """Автоматично виводить категорії та будівлі з GameService"""
         catalog = self._gs.get_building_catalog()
         print("\n--- CONSTRUCTION MENU ---")
         
         for category, buildings in catalog.items():
             print(f"\n[{category.upper()}]")
             for b_name, costs in buildings.items():
-                cost_str = ", ".join([f"{v} {k}" for k, v in costs.items()])
-                print(f"  > {b_name:18} | Cost: {cost_str}")
+                is_unlocked = self._gs._research.is_building_unlocked(b_name)
+                
+                if is_unlocked:
+                    cost_str = ", ".join([f"{v} {k}" for k, v in costs.items()])
+                    print(f"  > {b_name:18} | Cost: {cost_str}")
+                else:
+                    print(f"  X {b_name:18} | [LOCKED via Research]")
+        print("-" * 60)
+
+    def _show_research_menu(self) -> None:
+        print("\n--- RESEARCH LABORATORY ---")
+        rp = self._gs._rm.get_amount('research_points')
+        print(f"Current Research Points (RP): {rp}")
+        
+        techs = self._gs.list_research()
+        if not techs:
+            print("  (No new technologies available)")
+        
+        for t_name, data in techs.items():
+            cost = data['cost']
+            desc = data['desc']
+            unlocks = ", ".join(data['unlocks_buildings'])
+            print(f"  > {t_name:18} (Cost: {cost} RP) | {desc}")
+            print(f"      Unlocks: {unlocks}")
         print("-" * 60)
 
     def _print_menu(self) -> None:
         print("-" * 60)
         print("1) Resources  2) Buildings  3) Build...")
-        print("4) NEXT TICK  5) Cheat (+Res) 6) UPGRADE Building")
-        print("7) BUILD SHIP (Port required)") 
+        print("4) NEXT TICK  5) Cheat      6) UPGRADE Building")
+        print("7) BUILD SHIP 8) RESEARCH")
         print("0) Exit")
 
     def main_loop(self) -> None:
@@ -66,7 +87,7 @@ class ConsoleUI(IGameUI):
                 self._print_buildings()
             elif choice == "3":
                 self._show_build_menu()
-                k = input("Type building name to build (or 'back'): ").strip().lower()
+                k = input("Type building name (or 'back'): ").strip().lower()
                 if k != 'back':
                     ok, msg = self._gs.build(k)
                     print(f">> {msg}")
@@ -77,21 +98,24 @@ class ConsoleUI(IGameUI):
                 self._print_resources()
             elif choice == "5":
                 rm = self._gs._rm
-                for r in ['wood', 'stone', 'iron', 'food', 'coal', 'energy', 'people', 'planks', 'water', 'steel']:
+                for r in ['wood', 'stone', 'iron', 'food', 'coal', 'energy', 'people', 'planks', 'water', 'steel', 'research_points']:
                     rm.add_resource(r, 100)
                 print(">> Resources added.")
             elif choice == "6":
-                bid = input("Enter Building ID to upgrade: ").strip()
+                bid = input("Enter Building ID: ").strip()
                 if bid.isdigit():
                     ok, msg = self._gs.upgrade(int(bid))
                     print(f">> {msg}")
-                else:
-                    print("Invalid ID")
             elif choice == "7":
                 ok, msg = self._gs.build_ship()
                 print(f">> {msg}")
+            elif choice == "8":
+                self._show_research_menu()
+                t = input("Type tech name to research (or 'back'): ").strip().lower()
+                if t != 'back':
+                    ok, msg = self._gs.research_tech(t)
+                    print(f">> {msg}")
             elif choice == "0":
                 self._running = False
-                print("Goodbye.")
             else:
                 print("Unknown option.")

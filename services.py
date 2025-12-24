@@ -376,8 +376,50 @@ class TradingService:
         return False, "Unknown trade type."
 
 
+class RaidService:
+    def __init__(self, resource_manager: IResourceManager):
+        self._rm = resource_manager
+        self._loot_values = {
+            'wood': 2, 'stone': 3, 'food': 2, 'coal': 4,
+            'iron': 5, 'planks': 5, 'fish': 3, 'steel': 15,
+            'concrete': 10, 'gold': 1
+        }
+
+    def execute_raid(self) -> tuple[bool, str]:
+        ships = self._rm.get_amount('ship')
+        if ships <= 0:
+            return False, "You have 0 ships! Build a fleet first."
+
+        base_chance = random.uniform(0, 40)
+        ship_bonus = ships * 10
+        win_chance = base_chance + ship_bonus
+        
+        roll = random.uniform(0, 100)
+        is_victory = roll <= win_chance
+
+        if is_victory:
+            num_rewards = random.randint(3, 5)
+            possible_loot = list(self._loot_values.keys())
+            loot_types = random.sample(possible_loot, num_rewards)
+            
+            loot_msg = []
+            for r in loot_types:
+                price = self._loot_values[r]
+                base_qty = 50 / price 
+                qty = max(1, int(base_qty * random.uniform(0.5, 1.5)))
+                self._rm.add_resource(r, qty)
+                loot_msg.append(f"{qty} {r}")
+            
+            return True, f"VICTORY! (Chance: {int(win_chance)}%) Loot: {', '.join(loot_msg)}"
+        else:
+            loss = random.randint(1, 2)
+            actual_loss = min(ships, loss)
+            self._rm.consume_resource('ship', actual_loss)
+            return False, f"DEFEAT! (Chance: {int(win_chance)}%) You lost {actual_loss} ship(s)."
+
+
 class GameService:
-    def __init__(self, rm, br, factory, constr, prod, research, trading):
+    def __init__(self, rm, br, factory, constr, prod, research, trading, raid):
         self._rm = rm
         self._br = br
         self._factory = factory
@@ -385,6 +427,7 @@ class GameService:
         self._prod = prod
         self._research = research
         self._trading = trading
+        self._raid = raid
         
         self._building_configs = {
             'living': {
@@ -491,3 +534,6 @@ class GameService:
         if not centers:
             return False, "Build Logistics Center first!"
         return self._trading.execute_trade(city, offer_idx)
+
+    def raid(self) -> tuple[bool, str]:
+        return self._raid.execute_raid()

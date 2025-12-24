@@ -2,8 +2,10 @@ from __future__ import annotations
 from typing import Dict
 
 from repositories import BuildingRepository, ResourceRepository
-from services import ResourceManager, BuildingFactory, ConstructionService, ProductionService, GameService
-
+from services import (
+    ResourceManager, BuildingFactory, ConstructionService, 
+    ProductionService, GameService, ResearchService
+)
 
 class Container:
     def __init__(self):
@@ -19,31 +21,30 @@ class Container:
 def build_container() -> Container:
     c = Container()
 
-    # repositories
     res_repo = ResourceRepository()
     bld_repo = BuildingRepository()
     c.register_singleton('resource_repo', res_repo)
     c.register_singleton('building_repo', bld_repo)
 
-    # services
     rm = ResourceManager(res_repo)
     factory = BuildingFactory()
     constr = ConstructionService(rm, bld_repo)
     prod = ProductionService(bld_repo, rm)
+    research = ResearchService(rm)
 
     c.register_singleton('resource_manager', rm)
     c.register_singleton('building_factory', factory)
     c.register_singleton('construction_service', constr)
     c.register_singleton('production_service', prod)
+    c.register_singleton('research_service', research)
 
-    # game service
-    gs = GameService(rm, bld_repo, factory, constr, prod)
+    gs = GameService(rm, bld_repo, factory, constr, prod, research)
     c.register_singleton('game_service', gs)
 
-    # seed some starter resources
     rm.add_resource('wood', 20)
     rm.add_resource('stone', 20)
     rm.add_resource('food', 10)
     rm.add_resource('iron', 5)
+    rm.add_resource('research_points', 5)
 
     return c

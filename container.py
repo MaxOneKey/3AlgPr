@@ -31,7 +31,7 @@ def build_container() -> Container:
     prod = ProductionService(bld_repo, rm)
     research = ResearchService(rm)
     trading = TradingService(rm)
-    raid = RaidService(rm)  # <--- Додано
+    raid = RaidService(rm)  
 
     c.register_singleton('resource_manager', rm)
     c.register_singleton('building_factory', factory)
@@ -39,14 +39,15 @@ def build_container() -> Container:
     c.register_singleton('production_service', prod)
     c.register_singleton('research_service', research)
     c.register_singleton('trading_service', trading)
-    c.register_singleton('raid_service', raid) # <--- Додано
+    c.register_singleton('raid_service', raid) 
 
-    # Передаємо raid у GameService
+    
     gs = GameService(rm, bld_repo, factory, constr, prod, research, trading, raid)
     c.register_singleton('game_service', gs)
 
     # Стартові ресурси
     rm.add_resource('wood', 20)
+    rm.add_resource('people', 2)
     rm.add_resource('stone', 20)
     rm.add_resource('food', 10)
     rm.add_resource('iron', 5)
@@ -54,3 +55,4 @@ def build_container() -> Container:
     rm.add_resource('gold', 50) 
 
     return c
+

@@ -2,8 +2,10 @@ from __future__ import annotations
 from typing import Dict, Optional, Callable, List, Set
 import random
 from interfaces import (
-    IResourceManager, IProductionService, IConstructionService, IBuildingFactory
+    IResourceManager, IProductionService, IConstructionService, IBuildingFactory,
+    IResearchService, ITradingService, IRaidService
 )
+from interfaces import IRepository
 from repositories import BuildingRepository, ResourceRepository
 from entities import (
     Resource, Building, ProducerBuilding, StorageBuilding, WaterTower
@@ -215,7 +217,7 @@ class ProductionService(IProductionService):
                 self._rm.add_resource(rname, amount)
 
 
-class ResearchService:
+class ResearchService(IResearchService):
     def __init__(self, resource_manager: IResourceManager):
         self._rm = resource_manager
         self._unlocked_techs: Set[str] = set()
@@ -290,7 +292,7 @@ class ResearchService:
         return True, f"Researched '{tech_name}'! Unlocked: {', '.join(tech['unlocks_buildings'])}"
 
 
-class TradingService:
+class TradingService(ITradingService):
     def __init__(self, resource_manager: IResourceManager):
         self._rm = resource_manager
         
@@ -376,7 +378,7 @@ class TradingService:
         return False, "Unknown trade type."
 
 
-class RaidService:
+class RaidService(IRaidService):
     def __init__(self, resource_manager: IResourceManager):
         self._rm = resource_manager
         self._loot_values = {
@@ -419,7 +421,15 @@ class RaidService:
 
 
 class GameService:
-    def __init__(self, rm, br, factory, constr, prod, research, trading, raid):
+    def __init__(self, 
+                 rm: IResourceManager, 
+                 br: IRepository, 
+                 factory: IBuildingFactory, 
+                 constr: IConstructionService, 
+                 prod: IProductionService, 
+                 research: IResearchService, 
+                 trading: ITradingService, 
+                 raid: IRaidService):
         self._rm = rm
         self._br = br
         self._factory = factory
@@ -536,4 +546,5 @@ class GameService:
 
     def raid(self) -> tuple[bool, str]:
         return self._raid.execute_raid()
+
 

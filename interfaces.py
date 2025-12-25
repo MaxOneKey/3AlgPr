@@ -116,4 +116,91 @@ class IBuildingFactory(ABC):
 class IGameUI(ABC):
     @abstractmethod
     def main_loop(self) -> None:
+
+        ...
+class IResearchService(ABC):
+    @abstractmethod
+    def get_available_techs(self) -> Dict[str, dict]: 
+        ...
+    
+    @abstractmethod
+    def is_building_unlocked(self, kind: str) -> bool: 
+        ...
+    
+    @abstractmethod
+    def research(self, tech_name: str) -> tuple[bool, str]: 
+        ...
+
+
+class ITradingService(ABC):
+    @abstractmethod
+    def get_active_cities(self) -> List[str]: 
+        ...
+    
+    @abstractmethod
+    def get_offers(self, city_name: str) -> List[dict]: 
+        ...
+    
+    @abstractmethod
+    def execute_trade(self, city_name: str, offer_index: int) -> tuple[bool, str]: 
+        ...
+
+
+class IRaidService(ABC):
+    @abstractmethod
+    def execute_raid(self) -> tuple[bool, str]: 
+        ...
+
+
+class IGameService(ABC):
+    @abstractmethod
+    def list_resources(self) -> Dict[str, int]: 
+        ...
+
+    @abstractmethod
+    def list_buildings(self) -> List[IBuilding]: 
+        ...
+
+    @abstractmethod
+    def get_building_catalog(self) -> Dict[str, Dict[str, Dict[str, int]]]: 
+        ...
+
+    @abstractmethod
+    def list_research(self) -> Dict[str, dict]: 
+        ...
+
+    @abstractmethod
+    def research_tech(self, tech_name: str) -> tuple[bool, str]: 
+        ...
+
+    @abstractmethod
+    def build(self, kind: str) -> tuple[bool, str]: 
+        ...
+
+    @abstractmethod
+    def build_ship(self) -> tuple[bool, str]: 
+        ...
+
+    @abstractmethod
+    def upgrade(self, building_id: int) -> tuple[bool, str]: 
+        ...
+
+    @abstractmethod
+    def tick(self) -> None: 
+        ...
+
+    @abstractmethod
+    def get_trading_cities(self) -> List[str]: 
+        ...
+
+    @abstractmethod
+    def get_city_offers(self, city: str) -> List[dict]: 
+        ...
+
+    @abstractmethod
+    def trade(self, city: str, offer_idx: int) -> tuple[bool, str]: 
+        ...
+
+    @abstractmethod
+    def raid(self) -> tuple[bool, str]: 
         ...
